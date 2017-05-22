@@ -1,6 +1,6 @@
 RSpec.describe Licensee::License do
-  let(:license_count) { 30 }
-  let(:hidden_license_count) { 18 }
+  let(:license_count) { 32 }
+  let(:hidden_license_count) { 20 }
   let(:featured_license_count) { 3 }
   let(:pseudo_license_count) { 2 }
   let(:non_featured_license_count) do
@@ -35,7 +35,7 @@ RSpec.describe Licensee::License do
       end
 
       it "doesn't include hidden licenses" do
-        expect(licenses).to all satisfy { |license| !license.hidden? }
+        expect(licenses).to all(satisfy { |license| !license.hidden? })
       end
 
       it 'includes featured licenses' do
@@ -168,6 +168,11 @@ RSpec.describe Licensee::License do
       expect(mit).to_not be_gpl
       expect(gpl).to be_gpl
     end
+
+    it 'knows if a license is CC' do
+      expect(gpl).to_not be_creative_commons
+      expect(cc_by).to be_creative_commons
+    end
   end
 
   context 'content' do
@@ -180,7 +185,7 @@ RSpec.describe Licensee::License do
     end
 
     it 'computes the hash' do
-      expect(mit.hash).to eql('750260c322080bab4c19fd55eb78bc73e1ae8f11')
+      expect(mit.hash).to eql('d64f3bb4282a97b37454b5bb96a8a264a3363dc3')
     end
 
     context 'with content stubbed' do
@@ -226,5 +231,17 @@ RSpec.describe Licensee::License do
     expect(mit.rules).to have_key('permissions')
     expect(mit.rules['permissions'].first).to be_a(Licensee::Rule)
     expect(mit.rules.flatten.count).to eql(6)
+  end
+
+  it 'returns rules by tag and group' do
+    expect(cc_by.rules).to have_key('limitations')
+    rule = cc_by.rules['limitations'].find { |r| r.tag == 'patent-use' }
+    expect(rule).to_not be_nil
+    expect(rule.description).to include('does NOT grant')
+
+    expect(gpl.rules).to have_key('permissions')
+    rule = gpl.rules['permissions'].find { |r| r.tag == 'patent-use' }
+    expect(rule).to_not be_nil
+    expect(rule.description).to include('an express grant of patent rights')
   end
 end

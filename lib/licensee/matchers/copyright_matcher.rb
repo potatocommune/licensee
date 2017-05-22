@@ -1,4 +1,5 @@
 # encoding: UTF-8
+
 module Licensee
   module Matchers
     class Copyright
@@ -6,7 +7,7 @@ module Licensee
 
       # rubocop:disable Metrics/LineLength
       COPYRIGHT_SYMBOLS = Regexp.union([/copyright/i, /\(c\)/i, "\u00A9", "\xC2\xA9"])
-      REGEX = /\s*#{COPYRIGHT_SYMBOLS} #{COPYRIGHT_SYMBOLS}? ?(\d{4}|\[year\])(.*)?\s*/i
+      REGEX = /\A\s*#{COPYRIGHT_SYMBOLS}.*$/i
       # rubocop:enable Metrics/LineLength
 
       def initialize(file)

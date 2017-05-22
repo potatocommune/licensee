@@ -8,8 +8,10 @@ module Licensee
         when '.json'
           [Matchers::NpmBower]
         else
-          if filename == 'DESCRIPTION' && content.start_with?('Package:')
+          if filename == 'DESCRIPTION' && content.match(/^Package:/)
             [Matchers::Cran]
+          elsif filename == 'dist.ini'
+            [Matchers::DistZilla]
           else
             []
           end
@@ -19,6 +21,7 @@ module Licensee
       def self.name_score(filename)
         return 1.0  if ::File.extname(filename) == '.gemspec'
         return 1.0  if filename == 'package.json'
+        return 0.8  if filename == 'dist.ini'
         return 0.9  if filename == 'DESCRIPTION'
         return 0.75 if filename == 'bower.json'
         0.0

@@ -1,1 +1,0 @@
-s.license = 'mit'

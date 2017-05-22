@@ -2,25 +2,29 @@ class ContentHelperTestHelper
   include Licensee::ContentHelper
   attr_accessor :content
 
-  DEFAULT_CONTENT = <<-EOS.freeze
-Copyright 2016 Ben Balter
-
-The made
-up  license.
------------
-  EOS
-
   def initialize(content = nil)
-    @content = content || DEFAULT_CONTENT
+    @content = content
   end
 end
 
 RSpec.describe Licensee::ContentHelper do
-  subject { ContentHelperTestHelper.new }
+  let(:content) do
+    <<-EOS.freeze.gsub(/^\s*/, '')
+  # The MIT License
+  =================
+
+  Copyright 2016 Ben Balter
+
+  The made
+  up  license.
+  -----------
+EOS
+  end
+  subject { ContentHelperTestHelper.new(content) }
   let(:mit) { Licensee::License.find('mit') }
 
   it 'creates the wordset' do
-    expect(subject.wordset).to eql(Set.new(%w(the made up license)))
+    expect(subject.wordset).to eql(Set.new(%w[the made up license]))
   end
 
   it 'knows the length' do
@@ -32,12 +36,12 @@ RSpec.describe Licensee::ContentHelper do
   end
 
   it 'knows the length delta' do
-    expect(subject.length_delta(mit)).to eql(1012)
+    expect(subject.length_delta(mit)).to eql(1000)
     expect(subject.length_delta(subject)).to eql(0)
   end
 
   it 'knows the similarity' do
-    expect(subject.similarity(mit)).to be_within(1).of(4)
+    expect(subject.similarity(mit)).to be_within(1).of(2)
     expect(subject.similarity(subject)).to eql(100.0)
   end
 
@@ -70,8 +74,62 @@ RSpec.describe Licensee::ContentHelper do
       expect(normalized_content).to_not match(/\n/)
     end
 
+    it 'strips markdown headings' do
+      expect(normalized_content).to_not match('#')
+    end
+
+    Licensee::License.all(hidden: true).each do |license|
+      context license.name do
+        let(:stripped_content) { subject.content_without_title_and_version }
+
+        it 'strips the title' do
+          regex = Licensee::ContentHelper::ALT_TITLE_REGEX[license.key]
+          regex ||= /\A#{license.name_without_version}/i
+          expect(license.content_normalized).to_not match(regex)
+          expect(stripped_content).to_not match(regex)
+        end
+
+        it 'strips the version' do
+          expect(license.content_normalized).to_not match(/\Aversion/i)
+          expect(stripped_content).to_not match(/\Aversion/i)
+        end
+
+        it 'strips the copyright' do
+          expect(license.content_normalized).to_not match(/\Acopyright/i)
+        end
+
+        it 'strips the implementation instructions' do
+          end_terms_regex = /END OF TERMS AND CONDITIONS/i
+          expect(license.content_normalized).to_not match(end_terms_regex)
+          expect(license.content_normalized).to_not match(/How to apply/i)
+        end
+      end
+    end
+
+    it 'strips the title' do
+      expect(normalized_content).to_not match('MIT')
+    end
+
     it 'normalize the content' do
       expect(normalized_content).to eql 'the made up license.'
+    end
+
+    context 'a title in parenthesis' do
+      let(:content) { "(The MIT License)\n\nfoo" }
+
+      it 'strips the title' do
+        expect(normalized_content).to_not match('MIT')
+        expect(normalized_content).to eql('foo')
+      end
+    end
+
+    context 'multiple copyrights' do
+      let(:content) { "Copyright 2016 Ben Balter\nCopyright 2017 Bob\nFoo" }
+
+      it 'strips multiple copyrights' do
+        expect(normalized_content).to_not match('Ben')
+        expect(normalized_content).to eql('foo')
+      end
     end
   end
 end

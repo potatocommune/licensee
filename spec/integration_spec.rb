@@ -37,12 +37,48 @@ RSpec.describe 'integration test' do
           end
         end
 
+        context 'with CC-BY-NC-SA' do
+          let(:fixture) { 'cc-by-nc-sa' }
+
+          it 'matches nothing' do
+            expect(subject.license).to eql(nil)
+          end
+        end
+
+        context 'with CC-BY-ND' do
+          let(:fixture) { 'cc-by-nd' }
+
+          it 'matches nothing' do
+            expect(subject.license).to eql(nil)
+          end
+        end
+
         context 'MPL with HRs removed' do
           let(:license) { Licensee::License.find('mpl-2.0') }
           let(:fixture) { 'mpl-without-hrs' }
 
           it 'matches to MPL' do
             expect(subject.license).to eql(license)
+          end
+        end
+
+        context 'GPL3 with instructions removed' do
+          let(:license) { Licensee::License.find('gpl-3.0') }
+          let(:fixture) { 'gpl3-without-instructions' }
+
+          it 'matches to GPL3' do
+            expect(subject.license).to eql(license)
+          end
+        end
+
+        context 'DESCRIPTION file with a LICENSE file' do
+          let(:license) { Licensee::License.find('mit') }
+          let(:fixture) { 'description-license' }
+          let(:arguments) { { detect_packages: true } }
+
+          it 'matches' do
+            expect(subject.license).to eql(license)
+            expect(subject.package_file.path).to eql('DESCRIPTION')
           end
         end
       end
@@ -105,7 +141,7 @@ RSpec.describe 'integration test' do
         end
 
         context 'a DESCRIPTION file' do
-          let(:content) { "Package: test\nLicense: MIT + file LICENSE" }
+          let(:content) { "Package: test\nLicense: MIT" }
           let(:filename) { 'DESCRIPTION' }
           let(:license) { Licensee::License.find('mit') }
           let(:arguments) { { detect_packages: true } }

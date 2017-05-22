@@ -63,7 +63,7 @@ module Licensee
     # `no-license` - The project is not licensed (e.g., all rights reserved)
     #
     # Note: A lack of detected license will be a nil license
-    PSEUDO_LICENSES = %w(other no-license).freeze
+    PSEUDO_LICENSES = %w[other no-license].freeze
 
     include Licensee::ContentHelper
 
@@ -111,6 +111,11 @@ module Licensee
       key == 'gpl-2.0' || key == 'gpl-3.0'
     end
 
+    # Is this license a Creative Commons license?
+    def creative_commons?
+      key.start_with?('cc-')
+    end
+
     # The license body (e.g., contents - frontmatter)
     def content
       @content ||= parts[2] if parts && parts[2]
@@ -138,7 +143,9 @@ module Licensee
       @rules = {}
 
       Rule.groups.each do |group|
-        @rules[group] = meta[group].map { |tag| Rule.find_by_tag(tag) }
+        @rules[group] = meta[group].map do |tag|
+          Rule.find_by_tag_and_group(tag, group)
+        end
       end
 
       @rules
